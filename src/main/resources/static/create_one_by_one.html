@@ -1,0 +1,180 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Quiz - One by One</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3>Create Quiz (One by One)</h3>
+        </div>
+        <div class="card-body">
+            <form id="quizForm">
+                <div class="mb-3">
+                    <label for="title" class="form-label">Quiz Title</label>
+                    <input type="text" id="title" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="organizedBy" class="form-label">Organized By</label>
+                    <input type="text" id="organizedBy" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="date" class="form-label">Date</label>
+                    <input type="date" id="date" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="duration" class="form-label">Duration (in minutes)</label>
+                    <input type="number" id="duration" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="expiryDateTime" class="form-label">Expiry Date & Time</label>
+                    <input type="datetime-local" id="expiryDateTime" class="form-control" required>
+                </div>
+
+                <h5 class="mt-4">Questions</h5>
+                <div id="questionsContainer"></div>
+                <button type="button" class="btn btn-secondary mb-3" onclick="addQuestion()">➕ Add Question</button>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-success">✅ Create Quiz</button>
+                </div>
+            </form>
+            <div id="alertBox" class="mt-3"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let questionIndex = 0;
+
+    function addQuestion() {
+        const container = document.getElementById("questionsContainer");
+
+        const questionHtml = `
+            <div class="card card-body bg-light border mb-3" data-index="${questionIndex}">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6>Question ${questionIndex + 1}</h6>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeQuestion(${questionIndex})">🗑 Remove</button>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label">Question Text</label>
+                    <input type="text" name="q${questionIndex}" class="form-control" required>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Option A</label>
+                        <input type="text" name="o${questionIndex}a" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Option B</label>
+                        <input type="text" name="o${questionIndex}b" class="form-control" required>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Option C</label>
+                        <input type="text" name="o${questionIndex}c" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Option D</label>
+                        <input type="text" name="o${questionIndex}d" class="form-control" required>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Correct Answer</label>
+                    <select name="a${questionIndex}" class="form-select" required>
+                        <option value="">-- Select Correct Option --</option>
+                        <option value="A">Option A</option>
+                        <option value="B">Option B</option>
+                        <option value="C">Option C</option>
+                        <option value="D">Option D</option>
+                    </select>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', questionHtml);
+        questionIndex++;
+    }
+
+    function removeQuestion(index) {
+        const container = document.getElementById("questionsContainer");
+        const card = container.querySelector(`[data-index="${index}"]`);
+        if (card) card.remove();
+    }
+
+    document.getElementById("quizForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const title = document.getElementById("title").value.trim();
+        const organizedBy = document.getElementById("organizedBy").value.trim();
+        const date = document.getElementById("date").value;
+        const duration = parseInt(document.getElementById("duration").value);
+        const expiryDateTime = document.getElementById("expiryDateTime").value;
+        const container = document.getElementById("questionsContainer").children;
+
+        const questions = [];
+        for (let card of container) {
+            const i = card.getAttribute('data-index');
+            const q = card.querySelector(`[name="q${i}"]`).value.trim();
+            const a = card.querySelector(`[name="o${i}a"]`).value.trim();
+            const b = card.querySelector(`[name="o${i}b"]`).value.trim();
+            const c = card.querySelector(`[name="o${i}c"]`).value.trim();
+            const d = card.querySelector(`[name="o${i}d"]`).value.trim();
+            const correct = card.querySelector(`[name="a${i}"]`).value;
+
+            const options = [a, b, c, d];
+            const correctIndex = ["A", "B", "C", "D"].indexOf(correct);
+
+            questions.push({
+                questionText: q,
+                options: options,
+                correctAnswer: correctIndex
+            });
+        }
+
+        const data = {
+            title,
+            organizedBy,
+            date,
+            duration,
+            expiryDateTime,
+            questions
+        };
+
+        try {
+            const res = await fetch("http://localhost:8080/api/quizzes/one-by-one", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            const alertBox = document.getElementById("alertBox");
+            if (!res.ok) {
+                const error = await res.text();
+                alertBox.innerHTML = `<div class="alert alert-danger">❌ Error: ${error}</div>`;
+                return;
+            }
+
+            const result = await res.json();
+            alertBox.innerHTML = `<div class="alert alert-success">✅ Quiz Created Successfully! Quiz ID: ${result.id}</div>`;
+            document.getElementById("quizForm").reset();
+            document.getElementById("questionsContainer").innerHTML = "";
+            questionIndex = 0;
+        } catch (err) {
+            document.getElementById("alertBox").innerHTML = `<div class="alert alert-danger">❌ Network or Server Error</div>`;
+        }
+    });
+</script>
+</body>
+</html>

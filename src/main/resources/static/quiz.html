@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz</title>
+    <style>
+        body {
+          font-family: 'Segoe UI', sans-serif;
+          background: linear-gradient(to right, #f9f9f9, #e0f7fa);
+          padding: 30px;
+          color: #333;
+        }
+
+        h2 {
+          color: #00796b;
+        }
+
+        #question-container {
+          background: #ffffff;
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+          margin-top: 20px;
+          transition: all 0.3s ease-in-out;
+        }
+
+        .option {
+          display: block;
+          margin: 10px 0;
+          background: #f1f1f1;
+          padding: 8px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: background 0.2s ease;
+        }
+
+        .option:hover {
+          background: #d1f2eb;
+        }
+
+        .option input {
+          margin-right: 10px;
+        }
+
+        #navigation {
+          margin-top: 20px;
+          display: flex;
+          gap: 10px;
+        }
+
+        button {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 15px;
+          transition: background-color 0.3s ease;
+        }
+
+        #prev-btn {
+          background-color: #9e9e9e;
+          color: white;
+        }
+
+        #prev-btn:hover {
+          background-color: #757575;
+        }
+
+        #next-btn {
+          background-color: #2196f3;
+          color: white;
+        }
+
+        #next-btn:hover {
+          background-color: #1976d2;
+        }
+
+        #submit-btn {
+          background-color: #4caf50;
+          color: white;
+        }
+
+        #submit-btn:hover {
+          background-color: #388e3c;
+        }
+
+        #result {
+          margin-top: 30px;
+          font-size: 20px;
+          color: #e91e63;
+        }
+
+        #timer {
+          font-weight: bold;
+          color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+<h2 id="quiz-title">Loading quiz...</h2>
+<div>🕒 Time Left: <span id="timer">--:--</span></div>
+
+<div id="question-container">
+    <p id="question-text"></p>
+    <div id="options"></div>
+</div>
+
+<div id="navigation">
+    <button id="prev-btn" onclick="prevQuestion()">⬅️ Previous</button>
+    <button id="next-btn" onclick="nextQuestion()">Next ➡️</button>
+    <button id="submit-btn" onclick="submitQuiz()">✅ Submit</button>
+</div>
+
+<div id="result"></div>
+
+<script>
+    let quizData = [];
+    let currentQuestion = 0;
+    let selectedAnswers = [];
+    let timerInterval;
+
+    async function loadQuiz() {
+        try {
+            const quizId = localStorage.getItem("selectedQuizId");
+            if (!quizId) {
+                alert("❌ No quiz selected by admin.");
+                return;
+            }
+
+            const res = await fetch(`http://localhost:8080/api/quizzes/${quizId}`);
+            if (!res.ok) throw new Error("Failed to load quiz");
+            const quiz = await res.json();
+
+            document.getElementById("quiz-title").innerText = quiz.title;
+            quizData = quiz.questions;
+            selectedAnswers = new Array(quizData.length).fill(null);
+            showQuestion();
+
+            startTimer(quiz.duration * 60); // convert to seconds
+        } catch (err) {
+            document.getElementById("quiz-title").innerText = "⚠️ Error loading quiz.";
+            console.error(err);
+        }
+    }
+
+    function showQuestion() {
+        const question = quizData[currentQuestion];
+        document.getElementById("question-text").innerText = `Q${currentQuestion + 1}: ${question.questionText}`;
+
+        const optionsDiv = document.getElementById("options");
+        optionsDiv.innerHTML = "";
+
+        question.options.forEach((opt, i) => {
+            const option = document.createElement("label");
+            option.classList.add("option");
+
+            const radio = document.createElement("input");
+            radio.type = "radio";
+            radio.name = "option";
+            radio.value = i;
+            if (selectedAnswers[currentQuestion] === i) {
+                radio.checked = true;
+            }
+
+            radio.addEventListener("change", () => {
+                selectedAnswers[currentQuestion] = i;
+            });
+
+            option.appendChild(radio);
+            option.appendChild(document.createTextNode(opt));
+            optionsDiv.appendChild(option);
+        });
+
+        document.getElementById("prev-btn").disabled = currentQuestion === 0;
+        document.getElementById("next-btn").disabled = currentQuestion === quizData.length - 1;
+    }
+
+    function nextQuestion() {
+        if (currentQuestion < quizData.length - 1) {
+            currentQuestion++;
+            showQuestion();
+        }
+    }
+
+    function prevQuestion() {
+        if (currentQuestion > 0) {
+            currentQuestion--;
+            showQuestion();
+        }
+    }
+
+    function submitQuiz() {
+        clearInterval(timerInterval);
+
+        let score = 0;
+        quizData.forEach((q, i) => {
+            if (selectedAnswers[i] === q.correctAnswer) {
+                score++;
+            }
+        });
+
+        document.getElementById("result").innerText = `🎉 Your score: ${score} / ${quizData.length}`;
+        document.getElementById("question-container").style.display = "none";
+        document.getElementById("navigation").style.display = "none";
+    }
+
+    function startTimer(duration) {
+        let timer = duration;
+        const timerDisplay = document.getElementById("timer");
+
+        timerInterval = setInterval(() => {
+            const minutes = Math.floor(timer / 60);
+            const seconds = timer % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            if (--timer < 0) {
+                clearInterval(timerInterval);
+                alert("⏰ Time's up!");
+                submitQuiz();
+            }
+        }, 1000);
+    }
+
+    loadQuiz();
+</script>
+
+</body>
+</html>

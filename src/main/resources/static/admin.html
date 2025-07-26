@@ -1,0 +1,256 @@
+
+<!--/////////////////////////////////////////////////Files and test history /////////////////////////////////-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - Test Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f6f8;
+        }
+        header {
+            background-color: #34495e;
+            color: white;
+            padding: 20px 40px;
+            font-size: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .main {
+            padding: 40px;
+        }
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .test-files {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .test-card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+            position: relative;
+        }
+        .test-card h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .test-info {
+            font-size: 14px;
+            color: #555;
+            margin-top: 10px;
+        }
+        .test-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        .test-actions button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .create-section {
+            margin-top: 50px;
+            text-align: center;
+        }
+        .create-section button {
+            padding: 15px 25px;
+            font-size: 16px;
+            border-radius: 8px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 99;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+        }
+        .modal-content h2 {
+            margin-top: 0;
+        }
+        .modal-content button {
+            margin: 10px;
+            padding: 12px 20px;
+            font-size: 14px;
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div>📊 Admin Panel</div>
+</header>
+
+<div class="main">
+    <div class="section-title">📁 Test Files</div>
+    <div class="test-files" id="testFiles">
+    </div>
+
+    <div class="create-section">
+        <button onclick="openCreateModal()">➕ Create New Test</button>
+    </div>
+</div>
+
+<div id="createModal" class="modal">
+    <div class="modal-content">
+        <h2>Choose Method to Create Test</h2>
+        <button onclick="location.href='create_one_by_one.html'">➕ Add Questions One by One</button>
+        <button onclick="location.href='create_bulk.html'">📤 Bulk Upload Questions</button>
+        <br>
+        <button style="background-color:#e74c3c" onclick="closeCreateModal()">❌ Cancel</button>
+    </div>
+</div>
+<script>
+    function openCreateModal() {
+        document.getElementById('createModal').style.display = 'block';
+    }
+    function closeCreateModal() {
+        document.getElementById('createModal').style.display = 'none';
+    }
+
+    const testFilesContainer = document.getElementById("testFiles");
+
+
+    fetch("http://localhost:8080/api/quizzes")
+        .then(response => response.json())
+        .then(data => {
+            testFilesContainer.innerHTML = ""; // clear old
+            data.forEach(test => {
+                const div = document.createElement("div");
+                div.className = "test-card";
+                div.innerHTML = `
+                    <h3>${test.title}</h3>
+                    <div class="test-info">
+                        <p><strong>Organized By:</strong> ${test.organizedBy || 'Unknown'}</p>
+                        <p><strong>Timer:</strong> ${test.duration} mins</p>
+                        <p><strong>Date:</strong> ${test.date || 'N/A'}</p>
+                    </div>
+                    <div class="test-actions">
+                        <button onclick="viewQuestions('${test.id}')">📄 View</button>
+                        <button onclick="reuseTest('${test.id}')">📢Publish Quiz</button>
+                        <button style="background-color:#e74c3c" onclick="deleteTest('${test.id}')">🗑️ Delete</button>
+                    </div>
+                `;
+                testFilesContainer.appendChild(div);
+            });
+        })
+        .catch(error => {
+            console.error("Failed to load quizzes", error);
+            testFilesContainer.innerHTML = "<p style='color:red'>Error loading quizzes</p>";
+        });
+
+function viewQuestions(id) {
+    fetch(`http://localhost:8080/api/quizzes/${id}`)
+        .then(res => res.json())
+        .then(data => {
+            const win = window.open("", "_blank");
+
+            const questionsHTML = data.questions.map((q, i) => `
+                <div style="margin-bottom: 20px;">
+                    <h3>Q${i + 1}: ${q.questionText}</h3>
+                    <ul>
+                        ${q.options.map((opt, idx) => `
+                            <li style="${idx === q.correctAnswer ? 'color:green;font-weight:bold;' : ''}">
+                                ${opt}
+                            </li>
+                        `).join("")}
+                    </ul>
+                </div>
+            `).join("");
+
+            const html = `
+                <html>
+                    <head>
+                        <title>${data.title} - Questions</title>
+                        <style>
+                            body { font-family: Arial; padding: 20px; }
+                            h2 { margin-bottom: 20px; }
+                            .question-block { margin-bottom: 30px; }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>${data.title} - View Questions</h2>
+                        ${questionsHTML}
+                        <button onclick="window.close()">Close</button>
+                    </body>
+                </html>
+            `;
+
+            win.document.write(html);
+            win.document.close();
+        })
+        .catch(err => {
+            alert("Error loading quiz questions");
+            console.error(err);
+        });
+}
+function reuseTest(id) {
+    localStorage.setItem('selectedQuizId', id);
+    alert("✅ Test selected successfully for user access!");
+}
+    function deleteTest(id) {
+        if (confirm("Are you sure you want to delete this quiz?")) {
+            fetch(`http://localhost:8080/api/quizzes/${id}`, {
+                method: "DELETE"
+            }).then(() => {
+                alert("Quiz deleted!");
+                location.reload();
+            });
+        }
+    }
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
