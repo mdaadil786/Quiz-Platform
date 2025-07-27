@@ -1,8 +1,6 @@
 ###  📚 Real-Time Quiz Platform(Admin Panel + User Test System) 
 
-A professional and dynamic full-stack web-based quiz platform where admins can create, manage, and publish quizzes through one-by-one or bulk question uploads.
-Users can attempt published quizzes via a clean, timed interface with an auto-scoring system.
-
+A professional and dynamic full-stack web-based quiz platform where admins can create, manage, and publish quizzes through one-by-one or bulk question uploads.Users can attempt published quizzes via a clean, timed interface with an auto-scoring system.
 
 
 
@@ -22,44 +20,70 @@ Database: MongoDB
 👨‍🏫 Admin Panel
 
 📁 Test Files Section
+
  Shows all created test folders with:
+ 
  ✅ Test Title
+ 
  👤 Organized By
+ 
  ⏱️ Timer (in minutes)
+ 
  📅 Created Date
 
 Actions:
+ 
  🔍 View Questions
+ 
  ♻️ Publish Quiz
+ 
  🗑️ Delete Test
+ 
  ➕ Create Test
 
 Choose test creation method:
+  
   One-by-One Question Entry
+  
   Bulk Question Upload (JSON/CSV)
 
 Set test metadata:
+ 
   Test Title
+ 
   Organized By
+  
   Timer
 
 🧾 Question Format:
+  
   Question Text
+  
   Option A / B / C / D
+  
   Correct Answer
 
 📜 Reusable Question Bank
+  
   View previously added questions
+  
   Reuse across multiple tests
 
 
 👨‍🎓 User Panel
+ 
  🔓 Login/Register
+ 
  🧾 View Available Tests
+ 
  ⏳ Attempt quiz(with Timer)
+ 
  ✅ Auto-submit on timeout
+ 
  👉One question per page(Next/Previous navigation).
+ 
  ✅ Submit & Auto-Evaluate Score
+ 
  🔒 Prevent Repeat Attempts
 
 
